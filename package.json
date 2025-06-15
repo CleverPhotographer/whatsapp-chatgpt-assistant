@@ -1,0 +1,9 @@
+{
+  "name": "whatsapp-chatgpt-assistant",
+  "version": "1.0.0",
+  "dependencies": {
+    "axios": "^1.6.7",
+    "openai": "^4.49.0",
+    "twilio": "^4.29.2"
+  }
+}
