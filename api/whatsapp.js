@@ -1,4 +1,3 @@
-const axios = require('axios');
 const { OpenAI } = require('openai');
 const twilio = require('twilio');
 
@@ -14,32 +13,42 @@ module.exports = async (req, res) => {
   const userMessage = req.body.Body;
   const userNumber = req.body.From;
 
-  const authorizedNumbers = [process.env.AUTHORIZED_NUMBER];
-  if (!authorizedNumbers.includes(userNumber)) {
+  console.log("Received message from:", userNumber);
+  console.log("Message content:", userMessage);
+
+  try {
+    const chatResponse = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a helpful photography assistant. Give practical, clear answers about camera settings, shooting conditions, creative ideas, and gear for photographers on location.',
+        },
+        {
+          role: 'user',
+          content: userMessage,
+        },
+      ],
+    });
+
+    const reply = chatResponse.choices[0].message.content;
+
     await client.messages.create({
-      body: 'You are not authorized yet. Please subscribe.',
+      body: reply,
       from: 'whatsapp:' + process.env.TWILIO_WHATSAPP_NUMBER,
       to: userNumber,
     });
+
     res.status(200).end();
-    return;
+  } catch (error) {
+    console.error("Error handling message:", error);
+
+    await client.messages.create({
+      body: 'Oops! Something went wrong while processing your message. Please try again later.',
+      from: 'whatsapp:' + process.env.TWILIO_WHATSAPP_NUMBER,
+      to: userNumber,
+    });
+
+    res.status(500).send('Internal Server Error');
   }
-
-  const chatResponse = await openai.chat.completions.create({
-    model: 'gpt-4o',
-    messages: [
-      { role: 'system', content: 'You are a photography assistant, provide practical advice on camera settings and locations.' },
-      { role: 'user', content: userMessage },
-    ],
-  });
-
-  const reply = chatResponse.choices[0].message.content;
-
-  await client.messages.create({
-    body: reply,
-    from: 'whatsapp:' + process.env.TWILIO_WHATSAPP_NUMBER,
-    to: userNumber,
-  });
-
-  res.status(200).end();
 };
