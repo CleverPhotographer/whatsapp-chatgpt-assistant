@@ -24,7 +24,7 @@ module.exports = async (req, res) => {
       messages: [
         {
           role: 'system',
-          content: 'You are a helpful photography assistant. Give practical, clear advice on camera settings, shooting techniques, lighting, gear, and creative inspiration for photographers on location.',
+          content: 'You are a helpful photography assistant. Give practical, clear advice on camera settings, techniques, and creativity.',
         },
         {
           role: 'user',
@@ -33,8 +33,14 @@ module.exports = async (req, res) => {
       ],
     });
 
-    const reply = chatResponse.choices[0].message.content;
+    let reply = chatResponse.choices[0].message.content;
     console.log("✅ OpenAI response received.");
+
+    // ✂️ Trim to fit Twilio’s 1600 character WhatsApp limit
+    if (reply.length > 1500) {
+      reply = reply.slice(0, 1497) + '...';
+      console.log("✂️ Reply truncated to 1500 characters.");
+    }
 
     console.log("📤 Sending reply to WhatsApp via Twilio...");
 
@@ -49,7 +55,6 @@ module.exports = async (req, res) => {
   } catch (error) {
     console.error("❌ Error handling message:", error);
 
-    // Optional fallback reply to user
     try {
       await client.messages.create({
         body: '⚠️ Something went wrong while processing your request. Please try again later.',
